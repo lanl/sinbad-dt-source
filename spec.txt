@@ -3,19 +3,19 @@ c
 c  target plate
 1  1  1.5115e-01   1  -2  -5
 2  2  8.4910e-02   2  -47 -5
-c  beam tube 
+c  beam tube
 3  0   (47  -3  -4) : (-4  5  -47  -9)
 4  0   (-4 5 9 -12 -1)
 5  0   (-4 5 12 6 -1)
 c  interior
 6  0   -9 (-1:2:5) (-2:47:5) (-47:3:4) (4:-5:47)
-c  beam duct 
+c  beam duct
 7  0   -1  -7  9  -12  #4
-c  internal vessel 
-8  0  (9 -10  7  -1) : (9  -10  1): (7  -8  9  -12  -1)   
-c  aluminum sample   
+c  internal vessel
+8  0  (9 -10  7  -1) : (9  -10  1): (7  -8  9  -12  -1)
+c  aluminum sample
 9  0   (10 -11 -1 8) : (10 -11 1)
-c  external vessel 
+c  external vessel
 10 0   (11 -12 -1 8) : (11 -12 1)
 c  Bounding region
 11 0   12 -13  #5
@@ -23,7 +23,7 @@ c  Bounding region
 c  Outside region
 13 0   14
 
-c  ion tube 
+c  ion tube
 1  py  0.0
 2  py  0.0011
 47  py  0.0211
@@ -31,7 +31,7 @@ c  ion tube
 4  cy  1.6
 5  cy  1.5
 6  py  -200
-c  sample 
+c  sample
 7  cy  5.55
 8  cy  5.75
 9  so  10.0
@@ -44,7 +44,7 @@ c  sample
 c  problem type
 mode n p e
 c  geometry card
-*tr1  0 0 0  90 90 0  145 55 90 
+*tr1  0 0 0  90 90 0  145 55 90
 c  variance reduction
 imp:n  1 1 1 1 8r 0
 imp:p  1 1 1 1 8r 0
@@ -71,7 +71,7 @@ f12:n  13
 e12  0.0001  19i  0.01  79i  0.05  19i  0.1  79i  0.5  49i  1  &
 79i  5  49i  10  79i  18
 c  material specification
-c Ti-T 
+c Ti-T
 m0 nlib=00c plib=14p
 m1  1003  1.0076E-01  22046  4.1572E-03  22047  3.7490E-03 &
     22048  3.7148E-02  22049  2.7261E-03  22050  2.6102E-03
@@ -87,7 +87,7 @@ m3  24050  7.5725E-04  24052  1.4603E-02  24053 1.6558E-03  &
 25055  1.7363E-03
 c aluminum
 m4  13027  2.7147E-02  &
-14028  3.6189E-05  14029  1.8376E-06  14030  1.2114E-06  & 
+14028  3.6189E-05  14029  1.8376E-06  14030  1.2114E-06  &
 26054  1.0765E-06  26056  1.6899E-05  26057  3.9028E-07  &
 26058  5.1939E-08  &
 29063  7.9971E-07  29065  3.5644E-07  NLIB=00c
@@ -111,7 +111,7 @@ m7  1001  8.8413E-03   1002  1.0169E-06   &
 14028  5.0487E-03  14029  2.5636E-04  14030  1.6900E-04  &
 20040  2.6686E-03  &
 26054  1.1777E-03  26056  1.8487E-02  26057  4.2695E-04  &
-26058  5.6820E-05  
+26058  5.6820E-05
 c ordinary concrete
 m8  1001  6.0889e-3   1002  7.0030e-7  &
 8016  4.3305e-2   8017  1.6496e-5  &
@@ -123,22 +123,22 @@ m8  1001  6.0889e-3   1002  7.0030e-7  &
 26058  9.4284e-7
 c ne 218  (C18H14)
 m9  1001  4.5042e-02   1002  5.1805e-06  &
-6012  5.7890e-02 
+6012  5.7890e-02
 c air
 m10 7014  4.3248e-5   7015  1.5974e-7   &
 8016  1.0170e-5       8017  3.8739e-9   &
 18040  1.8876e-7
 c  energy treatment specification
-phys:n j j j j j  
-phys:p j j 1 j j 
+phys:n j j j j j
+phys:p j j 1 j j
 phys:e j j j j j j j j j j
 c  problem cutoff
 nps 1E8
-cut:n j j j j 1 
-cut:p j 0.3 j j j                                              
-cut:e j 0.3 j j j   
+cut:n j j j j 1
+cut:p j 0.3 j j j
+cut:e j 0.3 j j j
 c  peripheral cards
 prdmp 2j 1 j 5000000 $ Larger print dump for more nps
-c dbcn  j 500000000 1 10 j j j j j j 1 j j j j 1 j j 
+c dbcn  j 500000000 1 10 j j j j j j 1 j j j j 1 j j
 rand gen=2 stride 2000000
 print

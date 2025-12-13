@@ -9,6 +9,8 @@
 ! derivative works, distribute copies to the public, perform publicly and display publicly,
 ! and to permit others to do so.
 
+! SPDX-License-Identifier: BSD-3-Clause
+
 module srcdx_mod
     ! Use subroutines/funcitons
     use mcnp_interfaces_mod, only: expirx

@@ -10,6 +10,8 @@
 ! derivative works, distribute copies to the public, perform publicly and display publicly,
 ! and to permit others to do so.
 
+! SPDX-License-Identifier: BSD-3-Clause
+
 module source_mod
     ! Use subroutines/functions
     use mcnp_interfaces_mod, only: expirx
@@ -1072,7 +1074,7 @@ contains
             z1 = (ry - two*ry*rng_history%rn())
             rr = x1*x1 + z1*z1
             if (rr <= ry2) exit
-        end do 
+        end do
         if (rej > max_iter) then
             call expirx(1, 'source', 'bad in position rejection sampling; incrase idum(3)')
         end if
