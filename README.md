@@ -1,43 +1,51 @@
-# SINBAD DT Source Improvement 
+# MCNP6 SOURCE and SRCDX Subroutines
 
-Each calculation of the Monte Carlo N-Particle (MCNP) transport code (https://mcnp.lanl.gov) requires a source to be defined. This is accomplished with one of four options: SDEF, KSRC, SSR or the SOURCE Fortran subroutine. The SOURCE subroutine is a user defined method that must be implemented in the MCNP6 source.F90 file. Users must have access to the MCNP source code and rebuild the MCNP executable with the modified source.F90 file. The new MCNP executable can be used without defining the SDEF, KSRC, or SSR cards in the MCNP input file and the SOURCE subroutine will be invoked instead. If the defined source is anisotropic and point detector tallies or DXTRAN are used in an MCNP problem, the SRCDX subroutine is required. 
+Each calculation of [the MCNP® code](mcnp.lanl.gov) requires a starting particle. This is accomplished with one of four options: `SDEF`, `KSRC`, `SSR` or the `SOURCE` Fortran subroutine. The `SOURCE` subroutine is a user defined method that must be implemented in the MCNP6 `source.F90` file. Users must have access to the MCNP source code and rebuild the MCNP code the MCNP usingthe modified `source.F90` file. The new MCNP executable can be used without the `SDEF`, `KSRC`, or `SSR` cards in the MCNP input file, and the SOURCE subroutine will be invoked instead. If the defined source is anisotropic and point detector tallies or `DXTRAN` are used in an MCNP problem, the `SRCDX` subroutine is required. The point detector and `DXTRAN` techniques are known as next-event estimators and require information about the source angular distribution.
 
-The `source.F` and `srcdx.F` files were released as part of the Shielding Integral Benchmark Archive and Database (SINBAD) (https://www.oecd-nea.org/jcms/pl_32139/sinbad-shielding-integral-benchmark-archive-and-database). These fortran codes were developed for MCNP5 and cannot be used with MCNP6.
-The `source.F` file is used to calculate neutron properties (positions, energies, and directions) from deuterium–tritium (D–T) fusion while the `srcdx.F` file is used to compute the probability of a neutron being emitted toward a detector. We have rewritten these files for the MCNP code version 6.3.1.
+# MCNP5 SOUECE and SRCDX in SINBAD
 
-The `source.F90` and `srcdx.F90` files in this repository were updated from `source.F` and `srcdx.F` files released with SINBAD. 
+The `source.F` and `srcdx.F` files were released as part of [the SINBAD](www.oecd-nea.org/jcms/pl_32139/sinbad-shielding-integral-benchmark-archive-and-database) - Shielding Integral Benchmark Archive and Database. These Fortran codes were developed for MCNP5 to simulate neutrons from a deuterium-tritium (D-T) fusion reaction in a titanium-tritium (Ti-T) target. The `SOURCE` and `SRCDX` subroutines in SINBAD cannot be used with MCNP6.
 
-The `SOURCE` subroutine simulates neutron production from D-T fusion by transporting deuterons and sampling D–T reactions. Deuterons are initialized with a specified position and beam energy, traveling in the negative y direction. A maximum free-flight path is derived from the deuteron energy and material density, then used to sample the actual flight path. The stopping power, interpolated from the deuteron energy, reduces the particle’s energy according to the distance traveled, with Bohr straggling included. After each flight, the deuteron’s position is updated and a collision is processed. The scattering angle is calculated using either Rutherford scattering theory or the method of Biersack and Haggmark, depending on the reduced center-of-mass energy. D–T reaction sampling is performed using the tritium cross section, Legendre moments, and the deuteron energy to construct a probability density function (PDF) dependent on emission angle. For each collision, a neutron emission angle is sampled, and the rejection technique is applied to determine whether a reaction occurs. If a reaction is sampled, a neutron is produced and the deuteron transport loop ends; otherwise, the deuteron transport continues. When a D–T neutron is generated, relativistic kinematics determine its energy and direction based on the sampled emission angle and deuteron trajectory. The neutron’s starting position is then sampled within a circular area centered at the specified input position, using the beam width as the radius.
+The `source.F` file is used to calculate neutron properties (positions, energies, and directions) from D-T fusion while the `srcdx.F` file is used to compute the probability of a neutron being emitted toward a detector. The `source.F90` and `srcdx.F90` files in this repository were rewritten from `source.F` and `srcdx.F` files released with SINBAD. The references and comments were added into the new `source.F90` and `srcdx.F90` files.
 
-The `SRCDX` subroutine complements  the `SOURCE` subroutine by computing the probability of a neutron reaching a detector (PSC). Its inputs include the distribution of neutron direction cosines, the progenitor deuteron’s direction, and the D–T reaction PDF generated by `SOURCE`. For each starting neutron, the cosine of the angle between the deuteron path and the source-to-detector vector is calculated. The D–T reaction PDF is then interpolated at this cosine and integrated over all incident deuteron energies. A second integral of the PDF is evaluated across all deuteron energies and neutron directions. The PSC is obtained as the ratio of these two integrals.
+The `SOURCE` subroutine simulates neutron production from D-T fusion by transporting deuterons and sampling D–T reactions. The deuterons are initialized with a specified position and beam energy, traveling in the negative y direction. A maximum free-flight path is derived from the deuteron energy and material density, then used to sample the actual flight path. The stopping power, interpolated from the deuteron energy, reduces the particle’s energy according to the distance traveled, with Bohr straggling included. After each flight, the deuteron’s position is updated and a collision is processed. The scattering angle is calculated using either Rutherford scattering theory or the method of Biersack and Haggmark, depending on the reduced center-of-mass energy. D–T reaction sampling is performed using tritium cross section, Legendre moments, and the deuteron energy to construct a probability density function (PDF) dependent on emission angle. For each collision, a neutron emission angle is sampled, and the rejection technique is applied to determine whether a reaction occurs. If a reaction is sampled, a neutron is produced and the deuteron transport loop ends; otherwise, the deuteron transport continues. When a D–T neutron is generated, relativistic kinematics determine its energy and direction based on the sampled emission angle and deuteron trajectory. The neutron’s starting position is then sampled within a circular area centered at the specified input position, using the beam width as the radius.
+
+The `SRCDX` subroutine complements the `SOURCE` subroutine by computing the probability of a neutron reaching a detector (PSC). Its inputs include the distribution of neutron direction cosines, the progenitor deuteron’s direction, and the D–T reaction PDF generated by `SOURCE`. For each starting neutron, the cosine of the angle between the deuteron path and the source-to-detector vector is calculated. The D–T reaction PDF is then interpolated at this cosine and integrated over all incident deuteron energies. A second integral of the PDF is evaluated across all deuteron energies and neutron directions. The PSC is obtained as the ratio of these two integrals.
 
 # How to Compile 
 
-To use the `source` and `srcdx` subroutines in the MCNP code version 6.3.1, replace the `source.F90` and `srcdx.F90` in the `mcnp6/Source/src` directory with the two files and compile the code to get the new executable. Information on how to compile the MCNP code is avialable at https://mcnp.lanl.gov/reference_collection.html.
+To use the `source` and `srcdx` subroutines in the MCNP code version 6.3.1, replace the `source.F90` and `srcdx.F90` in the `mcnp6/Source/src` directory with the two files and compile the code to get the new executable. Information on how to compile the MCNP code is avialable at [the MCNP reference collection](mcnp.lanl.gov/reference_collection.html).
 
-To use the `source` and `srcdx` subroutines with the MCNP code version 6.3.0 (MCNP6.3.0), additional modifications must be made to other files in the MCNP source code to accomodate the use of the modules. In MCNP6.3.0, the `source.F90` and `srcdx.F90` files are not in the modules and thus they are put in the `mcnp_interfaces_mod` module. The `source` and `srcdx` interface subroutines in the `mcnp_interfaces_mod` must be removed. In the the `startp.F90` file, replace the following code `use mcnp_interfaces_mod, only: source` with the following code `use source_mod, only: source`. In the `calcps.F9`0 file, replace the following code `use mcnp_interfaces_mod, only: srcdx` with the following code `use srcdx_mod, only: srcdx`.
+To use the `source` and `srcdx` subroutines with the MCNP code version 6.3.0 (MCNP6.3.0), additional modifications must be made to othe files in the MCNP source code to accomodate the use of the modules. In MCNP6.3.0, the `source.F90` and `srcdx.F90` files are not in the modules and thus the subroutine signatures are placedin the `mcnp_interfaces_mod` module. The `source` and `srcdx` interface subroutine in the `mcnp_interfaces_mod` must be removed. In the the `startp.F90` file, replace the following code `use mcnp_interfaces_mod, only: source` with the following code `use source_mod, only: source`. In the `calcps.F9`0 file, replace the following code `use mcnp_interfaces_mod, only: srcdx` with the following code `use srcdx_mod, only: srcdx`.
 
 # How to input parameters
 
 The `RDUM` and `IDUM` card must be used in an MCNP input file.
 
-* rdum(1) is for deuteron beam energy (MeV)
-* rdum(2) is for Tritium/Titanium or Deuterium/Copper atomic ratio
-* rdum(3) is an initial distance in x coordinate for a source (cm)
-* rdum(4) is a distance in y coordinate for a source (cm)
-* rdum(5) is an initial distance in z coordinate for a souce (cm)
-* rdum(6) is deuteron beam width (cm)
-* idum(1) is a flag, where 1 is for D-T reaction and 2 for D-D reaction
-* idum(2) is a source cell; the cell number in an MCNP input file
-* idum(3) is the maximum number of iterations for the rejection loop; will set to 1000 if it is less than 1000
+* rdum(1) is for a deuteron beam energy (MeV)
+* rdum(2) is for a tritium/titanium atomic ratio
+* rdum(3) is an initial distance in x coordinate for starting neutrons (cm)
+* rdum(4) is a distance in y coordinate for starting neutrons (cm)
+* rdum(5) is an initial distance in z coordinate for starting neutrons (cm)
+* rdum(6) is a deuteron beam width (cm)
+* idum(1) is a flag, where 1 is for a D-T reaction and 2 for a D-D reaction
+* idum(2) is a starting cell of neutrons; the cell number in an MCNP input file
+* idum(3) is the maximum number of iterations for the Monte Carlo rejection loop; It will set to 1000 if it is less than 1000.
 
 # How to Cite
 
-If the source.F90 and srcdx.F90 files have been used, then a following citation of tis use is appreciated.
+If the source.F90 and srcdx.F90 files have been used, then a following citation of its use is appreciated.
 
 > M. R. Dzur, J. C. Armstrong, C. A. D'Angelo. "MCNP6 Subsoutine for Simulating a D-T Neutron Source in Ti-T Targets",
 > Los Alamos National Laboratory, LA-UR-24-28680, Los Alamaos, NM, USA, August, 2024.
-> https://mcnp.lanl.gov/pdf_files/TechReport_2024_LANL_LA-UR-24-28680_DzurArmstrongEtAl.pdf
+> mcnp.lanl.gov/pdf_files/TechReport_2024_LANL_LA-UR-24-28680_DzurArmstrongEtAl.pdf
+
+
+# How to Contribute
+
+Feedback, comments, requests, and bug reports can be provided through the [Github Issue System](github.com/lanl/sinbad-dt-source/issues).
+
+Contributions to fix bugs or improve physics can be made through the [Github Pull Request](github.com/lanl/sinbad-dt-source/pulls).
 
 # Release
 
@@ -46,6 +54,7 @@ This software has been approved for open source release and has been assigned id
 # Copyright
 
 © 2025. Triad National Security, LLC. All rights reserved.
+
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos National Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S. Department of Energy/National Nuclear Security Administration. All rights in the program are reserved by Triad National Security, LLC, and the U.S. Department of Energy/National Nuclear Security Administration. The Government is granted for itself and others acting on its behalf a nonexclusive, paid-up, irrevocable worldwide license in this material to reproduce, prepare. derivative works, distribute copies to the public, perform publicly and display publicly, and to permit others to do so.
  
 # License
