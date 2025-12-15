@@ -1,10 +1,10 @@
 # MCNP6 SOURCE and SRCDX Subroutines
 
-Each calculation of [the MCNP® code](mcnp.lanl.gov) requires a starting particle. This is accomplished with one of four options: `SDEF`, `KSRC`, `SSR` or the `SOURCE` Fortran subroutine. The `SOURCE` subroutine is a user defined method that must be implemented in the MCNP6 `source.F90` file. Users must have access to the MCNP source code and rebuild the MCNP code the MCNP usingthe modified `source.F90` file. The new MCNP executable can be used without the `SDEF`, `KSRC`, or `SSR` cards in the MCNP input file, and the SOURCE subroutine will be invoked instead. If the defined source is anisotropic and point detector tallies or `DXTRAN` are used in an MCNP problem, the `SRCDX` subroutine is required. The point detector and `DXTRAN` techniques are known as next-event estimators and require information about the source angular distribution.
+Each calculation of [the MCNP® code](http://mcnp.lanl.gov) requires a starting particle. This is accomplished with one of four options: `SDEF`, `KSRC`, `SSR` or the `SOURCE` Fortran subroutine. The `SOURCE` subroutine is a user defined method that must be implemented in the MCNP6 `source.F90` file. Users must have access to the MCNP source code and rebuild the MCNP code the MCNP usingthe modified `source.F90` file. The new MCNP executable can be used without the `SDEF`, `KSRC`, or `SSR` cards in the MCNP input file, and the SOURCE subroutine will be invoked instead. If the defined source is anisotropic and point detector tallies or `DXTRAN` are used in an MCNP problem, the `SRCDX` subroutine is required. The point detector and `DXTRAN` techniques are known as next-event estimators and require information about the source angular distribution.
 
 # MCNP5 SOUECE and SRCDX in SINBAD
 
-The `source.F` and `srcdx.F` files were released as part of [the SINBAD](www.oecd-nea.org/jcms/pl_32139/sinbad-shielding-integral-benchmark-archive-and-database) - Shielding Integral Benchmark Archive and Database. These Fortran codes were developed for MCNP5 to simulate neutrons from a deuterium-tritium (D-T) fusion reaction in a titanium-tritium (Ti-T) target. The `SOURCE` and `SRCDX` subroutines in SINBAD cannot be used with MCNP6.
+The `source.F` and `srcdx.F` files were released as part of [the SINBAD](http://www.oecd-nea.org/jcms/pl_32139/sinbad-shielding-integral-benchmark-archive-and-database) - Shielding Integral Benchmark Archive and Database. These Fortran codes were developed for MCNP5 to simulate neutrons from a deuterium-tritium (D-T) fusion reaction in a titanium-tritium (Ti-T) target. The `SOURCE` and `SRCDX` subroutines in SINBAD cannot be used with MCNP6.
 
 The `source.F` file is used to calculate neutron properties (positions, energies, and directions) from D-T fusion while the `srcdx.F` file is used to compute the probability of a neutron being emitted toward a detector. The `source.F90` and `srcdx.F90` files in this repository were rewritten from `source.F` and `srcdx.F` files released with SINBAD. The references and comments were added into the new `source.F90` and `srcdx.F90` files.
 
@@ -14,7 +14,7 @@ The `SRCDX` subroutine complements the `SOURCE` subroutine by computing the prob
 
 # How to Compile 
 
-To use the `source` and `srcdx` subroutines in the MCNP code version 6.3.1, replace the `source.F90` and `srcdx.F90` in the `mcnp6/Source/src` directory with the two files and compile the code to get the new executable. Information on how to compile the MCNP code is avialable at [the MCNP reference collection](mcnp.lanl.gov/reference_collection.html).
+To use the `source` and `srcdx` subroutines in the MCNP code version 6.3.1, replace the `source.F90` and `srcdx.F90` in the `mcnp6/Source/src` directory with the two files and compile the code to get the new executable. Information on how to compile the MCNP code is avialable at [the MCNP reference collection](http://mcnp.lanl.gov/reference_collection.html).
 
 To use the `source` and `srcdx` subroutines with the MCNP code version 6.3.0 (MCNP6.3.0), additional modifications must be made to othe files in the MCNP source code to accomodate the use of the modules. In MCNP6.3.0, the `source.F90` and `srcdx.F90` files are not in the modules and thus the subroutine signatures are placedin the `mcnp_interfaces_mod` module. The `source` and `srcdx` interface subroutine in the `mcnp_interfaces_mod` must be removed. In the the `startp.F90` file, replace the following code `use mcnp_interfaces_mod, only: source` with the following code `use source_mod, only: source`. In the `calcps.F9`0 file, replace the following code `use mcnp_interfaces_mod, only: srcdx` with the following code `use srcdx_mod, only: srcdx`.
 
@@ -43,9 +43,9 @@ If the source.F90 and srcdx.F90 files have been used, then a following citation 
 
 # How to Contribute
 
-Feedback, comments, requests, and bug reports can be provided through the [Github Issue System](github.com/lanl/sinbad-dt-source/issues).
+Feedback, comments, requests, and bug reports can be provided through the [Github Issue System](http://github.com/lanl/sinbad-dt-source/issues).
 
-Contributions to fix bugs or improve physics can be made through the [Github Pull Request](github.com/lanl/sinbad-dt-source/pulls).
+Contributions to fix bugs or improve physics can be made through the [Github Pull Request](http://github.com/lanl/sinbad-dt-source/pulls).
 
 # Release
 
