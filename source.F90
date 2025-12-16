@@ -35,12 +35,16 @@ module source_mod
     integer, public, parameter :: npts1 = 38   ! number of energy bins
     integer, public, parameter :: npts2 = 37   ! number of angle bins
 
+    ! Neutron productions of D-T and D-D fusion reactions
+    !  D-T fusion reaction: 2H + 3H -> 4He(3.52 MeV) + n(14.07 MeV)
+    !  D-D fusion reaction: 2H + 2H -> 3He(0.82 MeV) + n(2.45 MeV)
+    !
     ! Masses from NIST Reference on Constants, Units and Uncertainties Web site:
     ! https://physics.nist.gov/cuu/Constants/index.html
     !    ma = Deuteron mass, MeV/c^2
     !    mbv(1) = Triton mass, MeV/c^2; mbv(2) = Deuteron mass, MeV/c^2
     !    m1 = Neutron mass, MeV/c^2
-    !    m2v(1) = Alpha mass, MeV/c^2, m2v(2) = Helion (He-3) mass, MeV/c^2
+    !    m2v(1) = Alpha (He-4) mass, MeV/c^2, m2v(2) = Helion (He-3) mass, MeV/c^2
     real(dknd), public, parameter :: ma = 1875.612793_dknd
     real(dknd), public, parameter :: mbv(1:2) = [2808.920906_dknd, 1875.612793_dknd]
     real(dknd), public, parameter :: m1 = 939.565346_dknd
@@ -79,7 +83,7 @@ module source_mod
     ! dedx = sum of stopping powers weighted
     ! coslab = cosine angle
     ! sinlab = sine angle
-    ! pe1 = probalility distriution for D-T reaction to occur
+    ! pe1 = probalility distriution for D-T or D-D reaction to occur
     real(dknd), public, dimension(npts1) :: dedx
     real(dknd), public, dimension(npts1, npts2) :: coslab, sinlab, pe1
 !$omp threadprivate(dedx, coslab, sinlab, pe1)
@@ -87,7 +91,7 @@ module source_mod
 ! -----------
 ! Parameters
 ! -----------
-    integer, parameter :: mit = 50  ! max number of calling rot before reseting
+    integer, parameter :: mit = 50  ! max number of rot subroutine calls before reseting
 
 contains
 
@@ -115,27 +119,42 @@ contains
 !      * minimum beam energy  10 keV
 !      * maximun energy 10 MeV (NOT BREAK-UP)
 !
+!      This source is developed for MCNP modeling of experiments:
+!      * Deuteron beams are used to bombard Ti-T targets to produce neutrons (D-T reaction)
+!      * Deuteron beams are used to bombard Ti-D targets to produce neutrons (D-D reaction)
+!
 !      The source routine is called to set following source particle (pbl) values:
-!      pbl%r%x, pbl%r%y, pbl%r%z, pbl%i%icl, pbl%i%jsu, pbl%i%erg, pbl%r%wgt,
-!      pbl%r%tme, pbl%i%ipt, pbl%r%u, pbl%r%v, pbl%r%w.
-!      The subroutine srcdx may also be needed.
+!      * pbl%r%x = X-coordinate of the partilce position, cm
+!      * pbl%r%y = Y-coordinate of the particle position, cm
+!      * pbl%r%z = Z-coordinate of the particle position, cm
+!      * pbl%r%u = particle direction cosine with X-axis
+!      * pbl%r%v = particle direction cosine with Y-axis
+!      * pbl%r%w = particle direction cosine with Z-axis
+!      * pbl%i%erg = particle energy, MeV
+!      * pbl%r%wgt = particle weight at the particle position
+!      * pbl%r%tme = time at the particle position, shake
+!      * pbl%i%icl = cell number computed by MCNP; not a cell number in an MCNP input file
+!      * pbl%i%jsu = surface number computed by MCNP; not a surface number in an MCNP input file
+!      * pbl%i%ipt = type of particle; 1=neutron, 2=photon, 3=electron; see MCNP manual for other particle types
 !
-!      INPUT PARAMETERS ON RDUM CARD:
-!      * rdum(1)=deuteron beam energy, MeV
-!      * rdum(2)=Tritium/Titanium atomic ratio
-!      * rdum(3)= initial position in x coordinate, cm
-!      * rdum(4)= position in y coordinate for neutron, cm
-!      * rdum(5)= initial position in z coordinate, cm
-!      * rdum(6)=deuteron beam width, cm
 !
-!      INPUT PARAMETERS ON IDUM CARD:
-!      * idum(1)=flag, 1 for D-T reaction, 2 for D-D reaction
-!      * idum(2)=source cell defined in an MCNP input file
-!      * idum(3)=maximum iterations for rejection; will set to 1000 if idum(3) < 1000
+!      Input parameters on RDUM card in MCNP input files:
+!      * rdum(1) = deuteron beam energy, MeV
+!      * rdum(2) = atomic ratio; Tritium/Titanium for Ti-T target or Deuterium/Titanium for Ti-D target
+!      * rdum(3) = X-coordinate of the initial neutron position; pbl%r%x = rdum(3) + calulated-value (cm)
+!      * rdum(4) = Y-coordinate of the neutron position; pbl%r%y = rdum(4) (cm)
+!      * rdum(5) = Z-coordinate of the initial neutron position; pbl%r%z = rdum(5) + calculated-value (cm)
+!      * rdum(6) = deuteron beam width, cm
+!
+!      Input parameters on IDUM card in MCNP input files:
+!      * idum(1) = flag, 1 for D-T reaction, 2 for D-D reaction
+!      * idum(2) = cell number of starting neutrons; cell number defined in an MCNP input file.
+!      * idum(3) = maximum iterations for Monte Carlo rejection loop; will set to 1000 if idum(3) < 1000
 !
 !      comments:
 !      * rdum(4) should be positive
-!      * D-D not tested.
+!      * The code implementation for D-D reaction is not tested in the orginal code in SINBAD and this code version.
+!      * The D-D reaction in Cu-D targets is not implemented in the original code in SINBAD and in this code version.
 
 ! ****************
 ! Local Variables
@@ -143,7 +162,7 @@ contains
         integer :: i, j, k, l, n, irtt, icycle, rej
         integer :: iflag, cell_number, cell_index, max_iter
 
-        real(dknd) :: eb, xt, ry, mb, m2, ebb, rtitol, yylab, &
+        real(dknd) :: eb, xt, ry, mb, m2, ebb, rtitol, yyalb, &
                       ma2, mb2, m12, m22, mambm, mambp, mambm2, mambp2, &
                       ztm, atm, rhod, a, c, thl, ea, pa, s, s2, s3, s4, s5, s6, &
                       gammacm, rlambda, rlambda1, betacm, beta1, rg1, theta1, &
@@ -366,13 +385,17 @@ contains
                             109.2_dknd, 91.0_dknd, 78.7_dknd, 69.7_dknd, 62.8_dknd, &
                             57.3_dknd, 52.7_dknd, 49.0_dknd], &
                             [npts1, 2])
-
-        !   D-CU; These data were from the orginal SINBAD. To use, need to add `_dknd`
+        ! --------------------------------------------------------------------------
+        !   The D-CU data were in the original code in SINBAD. It is likely that the
+        !   data are for Cu-D target.To use, need to add `_dknd and replace in cdedx
+        !   for Ti-D target with these data, and make code changes to use Cu data
+        !   instead of Ti data.
+        !
         !   &86.403,115.32,135.72,150.89, 162.8,172.28,180.11,186.58,192.07,196.67,
         !   &199.81,204.03,209.32,213.13,215.86, 217.6,218.59,219.05,219.09,218.78,
         !   &218.11,217.21,216.13,214.91,213.57,212.11,203.94, 182.9,164.69,118.91,
-        !   &94.497, 79.76, 69.56,61.992,56.097,51.353, 47.45,44.167/
-
+        !   &94.497, 79.76, 69.56,61.992,56.097,51.353, 47.45,44.167
+        ! ---------------------------------------------------------------------------
         real(dknd), dimension(npts1, 2), parameter :: &
             tdedx = reshape([ &
                             ! D-T
@@ -425,19 +448,19 @@ contains
         ! These calculations are not expensive.
 
         ! Set values from idum card
-        iflag = idum(1)           ! 1 for DT reaction, 2 for DD
-        cell_number = idum(2)     ! source cell
-        max_iter = idum(3)        ! Maximum number of iterations for rejection
+        iflag = idum(1)           ! 1 for D-T reaction, 2 for D-D reaction
+        cell_number = idum(2)     ! source cell number
+        max_iter = idum(3)        ! maximum number of iterations for Monte Calro rejection loop
 
         ! Set values from rdum card
-        eb = rdum(1)              ! Deuteron  beam energy, MeV
-        xt = rdum(2)              ! T/Ti atom ratio
-        ry = rdum(6)              ! Deuteron beam width, cm
+        eb = rdum(1)    ! Deuteron  beam energy, MeV
+        xt = rdum(2)    ! T/Ti atomic ratio for Ti-T target D/Ti atomic ratio for Ti-D target
+        ry = rdum(6)    ! Deuteron beam width, cm
 
         ! Check iflag value
         if (iflag == 1 .or. iflag == 2) then
-            mb = mbv(iflag)   ! Target mass, triton or deuteron for D-T or D-D, respectively
-            m2 = m2v(iflag)   ! Outgoing particle mass, alpha or triton for D-T or D-D, respectively
+            mb = mbv(iflag)   ! Target mass, triton for D-T or deuteron for D-D
+            m2 = m2v(iflag)   ! Outgoing particle mass, He-4 for D-T or He-3 for D-D
         else
             call expirx(1, 'source', 'bad idum(1); it must be 1 or 2')
         end if
@@ -464,11 +487,11 @@ contains
         if (eb <= zero) then
             call expirx(1, 'source', 'bad rdum(1); it must be positive')
         end if
-        ! Check T/Ti atom ratio
+        ! Check T/Ti or D/Ti atomic ratio
         if (xt <= zero) then
             call expirx(1, 'source', 'bad rdum(2); it must be positive')
         end if
-        ! Check position in y direction for source
+        ! Check position in y-coordinate for neutron source (starting particle for MCNP calculation)
         if (rdum(4) <= zero) then
             call expirx(1, 'source', 'bad rdum(4); it must be positive')
         end if
@@ -480,69 +503,68 @@ contains
         ! ebb is beam energy converted to eV; eb = rdum(1)
         ebb = eb*1.e6_dknd
 
-        ! xt is T/Ti atom ratio; xt = rdum(2)
-        rtitol = one/(one + xt)
+        ! xt = rdum(2) = T/Ti or D/Ti atomic ratio
+        rtitol = one/(one + xt)  ! Ti/(Ti+T) or Ti/(Ti + D) atomic ratio
 
-        ! set the cutoff distance
-        yylab = rdum(4)*1.e8_dknd
+        ! yyalb = the cutoff distance; rdum(4) = position in y-coordinate
+        yyalb = rdum(4)*1.e8_dknd
 
         ma2 = ma*ma  ! ma = Deuteron mass
-        mb2 = mb*mb  ! mb = Target mass
-        m12 = m1*m1  ! m1 = Neutroon mass, triton or deuteron for D-T or D-D, respectively
-        m22 = m2*m2  ! m2 = Outgoing mass, alpha for DT reaction or triton for D-D reaction
+        mb2 = mb*mb  ! mb = Target mass, triton for D-T or deuteron for D-D
+        m12 = m1*m1  ! m1 = Neutron mass
+        m22 = m2*m2  ! m2 = Outgoing mass, He-4 for D-T or He-3 for D-D
         mambm = ma - mb
         mambp = ma + mb
         mambm2 = mambm*mambm
         mambp2 = mambp*mambp
 
         if (isource_flag == 0) then
-            ! isource_flag is initialized as 0 and saved to 1.
-            ! so that the fixed variables are computed only once when this subroutine is called.
+            ! Compute several variables whose values are fixed during the calcultations.
+
+            ! isource_flag is initialized as 0, saved to 1, and not changed during the calculations
             isource_flag = 1
 
-            ! Specify z num and atomic mass for D-T reaction, 1: D, 2: Ti, 3: T
-            z(1) = one
-            z(2) = 22._dknd
-            z(3) = one
-            am(1) = 2.0141010_dknd
-            am(2) = 47.867_dknd
+            ! Specify Z number and atomic mass 1
+            z(1) = one          ! D
+            z(2) = 22._dknd     ! Ti
+            z(3) = one          ! T
+            am(1) = 2.0141010_dknd  ! D
+            am(2) = 47.867_dknd     ! Ti
             select case (iflag)
-            case (1) ! T target
-                am(3) = 3.016049_dknd
-            case (2) ! D target
-                am(3) = 2.0141010_dknd
+            case (1) ! Ti-T target
+                am(3) = 3.016049_dknd  ! T
+            case (2) ! Ti-D target
+                am(3) = 2.0141010_dknd ! D
             end select
 
             ! Set energy
             emev = zero  ! varied, MeV
             epeak = 1.0e5_dknd*z(1)**0.67_dknd*am(1) ! fixed, eV
 
-            ! Compute stoich(1), ratio of Ti atm to total in molecule and same for T
-            stoich(1) = rtitol       ! ratio of Ti atm to total
-            stoich(2) = one - rtitol ! ratio of T atm to total
+            stoich(1) = rtitol       ! atomic ratio of Ti to Ti+T for D-T or Ti to Ti+D for D-D
+            stoich(2) = one - rtitol ! atomic ratio of T to Ti+T for D-T or D to Ti+D for D-D
 
-            ! Compute average z num for the molecule
+            ! Compute average Z num for the molecule (Ti-T or Ti-D target)
             ztm = z(2)*stoich(1) + z(3)*stoich(2)
             ! Compute avg atomic mass for the molecule
             atm = am(2)*stoich(1) + am(3)*stoich(2)
 
-            rhod = 4.51_dknd ! target density
+            rhod = 4.51_dknd ! target density (Titanium), g/cm^3
 
-            ! Compute the atm density for the molecule
+            ! Compute the atmomic density for the molecule
             atmrho = rhod*0.6022_dknd/atm
 
-            ! screeening length of ZBL potential
+            ! screeening length of ZBL (Zeigler-Biersack-Littmark) potential
             a = am(1)/atm
             c = 0.5292_dknd*0.8853_dknd  ! 0.5292 is bohr radius
-            ffpa = c/(z(1)**0.23_dknd + ztm**0.23_dknd)          ! Eq 2 in the D-T paper,in ref [1]
+            ffpa = c/(z(1)**0.23_dknd + ztm**0.23_dknd)          ! Eq 2 in ref [1]
             ffpf = ffpa*atm/(z(1)*ztm*14.4_dknd*(am(1) + atm))   ! almost equal to reduced CM energy, without mult by energy
             epsdg = five*ffpf*(one + a)**2/(four*a)              ! the right part of this equation is just 1/gamma in [2]
-            ! bohr straggling of de/dx. number "12" normalizes dist.
             ! bohr straggling eq divided by dx and rooted. Units of MeV/cm
             stbohr = 117._dknd*z(1)*sqrt(ztm*atmrho)
 
-            ! atom-atom scattering parameter
-            do j = 2, 3
+            ! atom-atom scattering parameters
+            do j = 2, 3  ! 2 for D-T; 3 for D-D
                 m2m1(j) = am(1)/am(j)
                 ec(j) = four*m2m1(j)/(one + m2m1(j))**2
                 a2(j) = c/(z(1)**0.23_dknd + z(j)**0.23_dknd)
@@ -551,10 +573,17 @@ contains
 
             ! dE/dx in target, stopping power
             ! Calculate dE/dx as the sum of the individual stopping powers weighted
+            ! cdedx and tdedx are the stopping power data from SRIM2006.
+            ! iflag=1: D-T reaction (Ti-T target); iflag=2: D-D reaction (Ti-D target)
+            ! am(2) = atomic mass of Ti
+            ! am(3) = atomic mass of T for Ti-T target, or D for Ti-D target
+            ! xt = atomic ratio of T/Ti for Ti-T target, or D/Ti for Ti-D target
+            ! rhod = Titanium density
             do i = 1, npts1  ! npts1 = number of energy bins
-                dedx(i) = cdedx(i, iflag)*am(2)/(am(2) + am(3)*xt) + tdedx(i, iflag)*am(3)*xt/(am(2) + am(3)*xt)
+                a = am(2) + am(3)*xt
+                dedx(i) = cdedx(i, iflag)*am(2) + tdedx(i, iflag)*am(3)*xt
             end do
-            dedx = 0.01_dknd*rhod*dedx
+            dedx = 0.01_dknd*rhod*dedx/(am(2) + am(3)*xt)
 
             ! ****************
             ! This is the relativistic kinematics from the appendix of [1]
@@ -722,11 +751,13 @@ contains
             deallocate (xslaban)
         end if  ! isource_flag == 0
 
-        ! Do rejection for a set maximum number of iterations
+        ! Monte Carlo ion transport
+        ! Do rejection loop for a maximum number of iterations
         do rej = 1, max_iter
             ! emev, e, distalb, uione1, vione1, wione1 were defined with save.
             ! These variables are varied and computed via Monte Carlo method
-            ! (i.e., using physics + random numbers).
+            ! (i.e., using physics + math + random numbers).
+
             if (emev <= emin) then
                 ! Reset values
 
@@ -953,10 +984,10 @@ contains
                 cycle
             end if
 
-            ! thickness condition
-            ! increment distance travelled in y dir
+            ! distance condition
+            ! calculate distance travelled in y direction
             distalb = distalb + ffpath*vione
-            if (distalb < zero .or. distalb > yylab) then
+            if (distalb < zero .or. distalb > yyalb) then
                 emev = zero
                 cycle
             end if
