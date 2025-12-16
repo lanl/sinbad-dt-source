@@ -63,14 +63,23 @@ module source_mod
 ! ----------------------------------------------------------------
 ! The following variables must be threadprivate since these
 ! variables are defined and changed in the OMP parallel region.
-! They are computed only once when the source subroutine is called.
 ! -----------------------------------------------------------------
 
-    ! Scalars that are used in srcdx
+    ! Scalars that are used in srcdx.
+    ! They may be changed for each source subroutine call.
+    ! ean = sum of Deteron rest mass energy (ma) and kinetic energy (KE)
+    ! uione = neutron direction cosine in X-axis
+    ! vione = neutron direction cosine in Y-axis
+    ! wione = neutron direction cosine in Z-axis
     real(dknd), public :: ean, uione, vione, wione
 !$omp threadprivate(ean, uione, vione, wione)
 
-    ! Arrays that are used in srcdx
+    ! Arrays that are used in srcdx.
+    ! They are computed at the 1st source subroutine call and thier values are fixed.
+    ! dedx = sum of stopping powers weighted
+    ! coslab = cosine angle
+    ! sinlab = sine angle
+    ! pe1 = probalility distriution for D-T reaction to occur
     real(dknd), public, dimension(npts1) :: dedx
     real(dknd), public, dimension(npts1, npts2) :: coslab, sinlab, pe1
 !$omp threadprivate(dedx, coslab, sinlab, pe1)
@@ -142,7 +151,7 @@ contains
                       eold, eps, eeg, pmax1, ffpath, ein, exout, dee, stdee, &
                       p, b, sqe, c2, r, rr, ex1, ex2, ex3, ex4, v, v1, fr, fr1, qq, &
                       roc, cc, aa, ff, delta, ct, st, cu, psi, deny, uzero, &
-                      ep, t2, a1, pn, ctn, stn, ean, pana, ph, sinlab1, &
+                      ep, t2, a1, pn, ctn, stn, pana, ph, sinlab1, &
                       t1n, t2n, t3n, e1n, ry2, x1, z1
 
         real(dknd), dimension(2)  :: stoich
@@ -487,6 +496,8 @@ contains
         mambp2 = mambp*mambp
 
         if (isource_flag == 0) then
+            ! isource_flag is initialized as 0 and saved to 1.
+            ! so that the fixed variables are computed only once when this subroutine is called.
             isource_flag = 1
 
             ! Specify z num and atomic mass for D-T reaction, 1: D, 2: Ti, 3: T
